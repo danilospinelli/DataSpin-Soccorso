@@ -46,14 +46,16 @@ DROP TABLE IF EXISTS Mezzo;
 CREATE TABLE Mezzo (
     ID_Mezzo INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
-    Descrizione TEXT
+    Descrizione TEXT,
+    Disponibile BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 DROP TABLE IF EXISTS Materiale;
 CREATE TABLE Materiale (
     ID_Materiale INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
-    Descrizione TEXT
+    Descrizione TEXT,
+    Disponibile BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 DROP TABLE IF EXISTS Segnalatore;
@@ -136,7 +138,7 @@ CREATE TABLE Mezzi_Usati_Missione (
     ID_Mezzo INT NOT NULL,
     PRIMARY KEY (ID_Missione, ID_Mezzo),
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
-    FOREIGN KEY (ID_Mezzo) REFERENCES Mezzo(ID_Mezzo) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (ID_Mezzo) REFERENCES Mezzo(ID_Mezzo) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 DROP TABLE IF EXISTS Materiali_Usati_Missione;
@@ -145,7 +147,7 @@ CREATE TABLE Materiali_Usati_Missione (
     ID_Materiale INT NOT NULL,
     PRIMARY KEY (ID_Missione, ID_Materiale),
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
-    FOREIGN KEY (ID_Materiale) REFERENCES Materiale(ID_Materiale) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (ID_Materiale) REFERENCES Materiale(ID_Materiale) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 DROP TABLE IF EXISTS Composizione_Squadra;
