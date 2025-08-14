@@ -46,16 +46,14 @@ DROP TABLE IF EXISTS Mezzo;
 CREATE TABLE Mezzo (
     ID_Mezzo INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
-    Descrizione TEXT,
-    Disponibile BOOLEAN NOT NULL DEFAULT TRUE
+    Descrizione TEXT
 );
 
 DROP TABLE IF EXISTS Materiale;
 CREATE TABLE Materiale (
     ID_Materiale INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
-    Descrizione TEXT,
-    Disponibile BOOLEAN NOT NULL DEFAULT TRUE
+    Descrizione TEXT
 );
 
 DROP TABLE IF EXISTS Segnalatore;
@@ -138,7 +136,7 @@ CREATE TABLE Mezzi_Usati_Missione (
     ID_Mezzo INT NOT NULL,
     PRIMARY KEY (ID_Missione, ID_Mezzo),
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
-    FOREIGN KEY (ID_Mezzo) REFERENCES Mezzo(ID_Mezzo) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (ID_Mezzo) REFERENCES Mezzo(ID_Mezzo) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 
 DROP TABLE IF EXISTS Materiali_Usati_Missione;
@@ -147,7 +145,7 @@ CREATE TABLE Materiali_Usati_Missione (
     ID_Materiale INT NOT NULL,
     PRIMARY KEY (ID_Missione, ID_Materiale),
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
-    FOREIGN KEY (ID_Materiale) REFERENCES Materiale(ID_Materiale) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (ID_Materiale) REFERENCES Materiale(ID_Materiale) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 
 DROP TABLE IF EXISTS Composizione_Squadra;
@@ -165,7 +163,7 @@ CREATE TABLE Missioni_Concluse (
     ID_Missione INT PRIMARY KEY,
     ID_Squadra INT NOT NULL,
     Commenti TEXT,
-    Successo TINYINT CHECK (Successo BETWEEN 1 AND 5) NOT NULL,
+    Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 1 AND 5),
     TimestampFine DATETIME NOT NULL,
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
     FOREIGN KEY (ID_Squadra) REFERENCES Squadra(ID_Squadra)
@@ -175,7 +173,7 @@ DROP TABLE IF EXISTS Missioni_Aggiornate;
 CREATE TABLE Missioni_Aggiornate (
     ID_Missione INT NOT NULL,
     ID_Amministratore INT NOT NULL,
-    TimestampInserimento DATETIME NOT NULL,
+    TimestampInserimento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Commento TEXT NOT NULL,
     PRIMARY KEY (ID_Missione, ID_Amministratore, TimestampInserimento),
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
