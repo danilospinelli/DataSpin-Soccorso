@@ -69,9 +69,9 @@ CREATE TABLE Richiesta (
     ID_Richiesta INT PRIMARY KEY AUTO_INCREMENT,
     Link VARCHAR(255) NOT NULL,
     IP VARCHAR(45) NOT NULL,
-    Stato ENUM('Attiva','In Corso','Chiusa','Annullata') NOT NULL,
+    Stato ENUM('Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Attiva',
     Foto VARCHAR(255), -- meglio salvare il percorso o URL / LONGBLOB?
-    Coordinate VARCHAR(100) NOT NULL, -- Longitudine e Latitudine?
+    Coordinate VARCHAR(100) NOT NULL,
     Indirizzo VARCHAR(255) NOT NULL,
     Descrizione TEXT NOT NULL,
     ID_Segnalatore INT NOT NULL,
