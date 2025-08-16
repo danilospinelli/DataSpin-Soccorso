@@ -88,13 +88,32 @@ BEGIN
 END$$
 
 -- Vincolo: Alle Richieste devono essere associate delle stringhe lunghe e casuali, che saranno poi i Link
-DROP TRIGGER IF EXISTS trg_link_casuale $$
-CREATE TRIGGER trg_link_casuale
-BEFORE INSERT ON Richiesta
+-- DROP TRIGGER IF EXISTS trg_link_casuale $$
+-- CREATE TRIGGER trg_link_casuale
+-- BEFORE INSERT ON Richiesta
+-- FOR EACH ROW
+-- BEGIN
+   -- IF NEW.Link IS NULL OR NEW.Link = '' THEN
+     --   SET NEW.Link = UUID();
+   -- END IF;
+-- END$$
+
+-- Vincolo: Una richiesta può diventare una missione se e solo se il suo stato è attivo
+DROP TRIGGER IF EXISTS check_richiesta_attiva $$
+CREATE TRIGGER check_richiesta_attiva
+BEFORE INSERT ON MISSIONE
 FOR EACH ROW
 BEGIN
-    IF NEW.Link IS NULL OR NEW.Link = '' THEN
-        SET NEW.Link = UUID();
+    DECLARE stato_richiesta VARCHAR(20);
+
+    SELECT Stato
+    INTO stato_richiesta
+    FROM RICHIESTA
+    WHERE ID_Richiesta = NEW.ID_Richiesta;
+
+    IF stato_richiesta <> 'attiva' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Impossibile creare la missione: richiesta non attiva';
     END IF;
 END$$
 
