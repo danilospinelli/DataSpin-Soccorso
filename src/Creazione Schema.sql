@@ -161,7 +161,7 @@ CREATE TABLE Composizione_Squadra (
 DROP TABLE IF EXISTS Missioni_Concluse;
 CREATE TABLE Missioni_Concluse (
     ID_Missione INT PRIMARY KEY,
-    ID_Squadra INT NOT NULL,
+    ID_Squadra INT NOT NULL, -- dà proBlemi con il popolamento
     Commenti TEXT,
     Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 1 AND 5),
     TimestampFine DATETIME NOT NULL,
