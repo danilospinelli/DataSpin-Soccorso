@@ -75,5 +75,59 @@ SELECT * FROM Missione m
 		JOIN Missioni_Concluse mc ON m.ID_Missione = mc.ID_Missione
 		JOIN Composizione_Squadra cs ON m.ID_Squadra = cs.ID_Squadra;
 
-CALL query6(2025); -- Che anno?
+CALL query6(2025); -- Che anno? (Spin forse con il ?)
 CALL query6(NULL);
+
+-- 7. Calcolo del numero di richieste provenienti da un certo soggetto segnalante (identificato dall'indirizzo email) 
+-- o da un certo indirizzo IP nelle ultime 36 ore.
+
+
+-- 8. Calcolo del tempo totale di impiego in missione di un certo operatore (cioè somma delle durata delle missioni in cui è stato coinvolto)
+
+
+-- 9. Estrazione delle missioni svoltesi negli ultimi tre anni nello stesso luogo di una missione data.
+SELECT M2.ID_Missione, M2.Obiettivo, M2.TimeStampInizio, R2.Indirizzo
+FROM MISSIONE M2
+JOIN RICHIESTA R2 ON R2.ID_Richiesta = M2.ID_Richiesta
+JOIN MISSIONE M1 ON M1.ID_Missione = 1 -- che id?
+JOIN RICHIESTA R1 ON R1.ID_Richiesta = M1.ID_Richiesta
+WHERE M2.ID_Missione <> 1  -- che id?
+  AND M2.TimeStampInizio >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
+  AND (R2.Indirizzo = R1.Indirizzo OR R2.Coordinate = R1.Coordinate);
+
+
+-- 10. Estrazione della lista delle richieste di soccorso chiuse con risultato non totalmente positivo (livello di successo minore di 5).
+SELECT R.ID_Richiesta,
+       R.Descrizione,
+       R.Indirizzo,
+       R.Coordinate,
+       MC.Successo,
+       MC.Commenti,
+       MC.TimestampFine
+FROM RICHIESTA R
+JOIN MISSIONE M ON R.ID_Richiesta = M.ID_Richiesta
+JOIN MISSIONI_COMPLETATE MC ON M.ID_Missione = MC.ID_Missione
+WHERE MC.Successo < 5;
+
+-- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
+-- (calcolate come alla query precedente).
+
+
+-- 12. Estrazione dello storico delle missioni in cui è stato coinvolto un certo mezzo.
+SELECT 
+    M.ID_Missione,
+    M.Obiettivo,
+    M.TimeStampInizio,
+    MC.TimestampFine,
+    MC.Commenti,
+    MC.Successo
+FROM MEZZO Z
+JOIN MEZZI_USATI_MISSIONE MU ON Z.ID_Mezzo = MU.ID_Mezzo
+JOIN MISSIONE M ON MU.ID_Missione = M.ID_Missione
+LEFT JOIN MISSIONI_COMPLETATE MC ON M.ID_Missione = MC.ID_Missione
+WHERE Z.Nome = 'Ambulanza 1';  	-- che nome?
+
+
+
+-- 13. Calcolo delle ore d'uso di un certo materiale (supponiamo che il tempo d'uso uso corrisponda alla durata totale 
+-- della missione in cui è stato assegnato).
