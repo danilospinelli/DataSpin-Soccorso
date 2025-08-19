@@ -163,7 +163,7 @@ CREATE TABLE Missioni_Concluse (
     ID_Missione INT PRIMARY KEY,
     ID_Squadra INT NOT NULL, -- dà proBlemi con il popolamento
     Commenti TEXT,
-    Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 1 AND 5),
+    Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 0 AND 5),
     TimestampFine DATETIME NOT NULL,
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
     FOREIGN KEY (ID_Squadra) REFERENCES Squadra(ID_Squadra)

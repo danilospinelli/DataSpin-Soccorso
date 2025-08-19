@@ -9,7 +9,7 @@ INSERT INTO Richiesta (IP, Foto, Coordinate, Indirizzo, Descrizione, ID_Segnalat
 
 
 -- 2. Creazione di una missione connessa a una richiesta di soccorso attiva. 
-INSERT INTO MISSIONE (Obiettivo, TimeStampInizio, ID_Richiesta, ID_Squadra) VALUES
+INSERT INTO Missione (Obiettivo, TimeStampInizio, ID_Richiesta, ID_Squadra) VALUES
 ('Rimuovere un albero', NOW(), 1, 1);
   
 
@@ -41,7 +41,7 @@ BEGIN
 END$$
 DELIMITER ;
 
-CALL query5(1); -- Conta il numero di Missioni svolte dall'Operatore 1
+CALL query5(1); -- Conta il numero di Missioni svolte dall'Operatore 1  Domanda: (Forse ?)?
 
 
 
@@ -75,23 +75,42 @@ SELECT * FROM Missione m
 		JOIN Missioni_Concluse mc ON m.ID_Missione = mc.ID_Missione
 		JOIN Composizione_Squadra cs ON m.ID_Squadra = cs.ID_Squadra;
 
-CALL query6(2025); -- Che anno? (Spin forse con il ?)
+CALL query6(?);
 CALL query6(NULL);
 
 -- 7. Calcolo del numero di richieste provenienti da un certo soggetto segnalante (identificato dall'indirizzo email) 
 -- o da un certo indirizzo IP nelle ultime 36 ore.
+SELECT COUNT(*) AS NumeroRichieste
+FROM Richiesta R
+LEFT JOIN Segnalatore S ON S.ID_Segnalatore = R.ID_Segnalatore
+WHERE R.TimeStamp >= NOW() - INTERVAL 36 HOUR
+  AND (
+       S.Email = ?      -- l'email del segnalatore
+       OR R.IP = ?      -- l'IP
+      );
 
 
 -- 8. Calcolo del tempo totale di impiego in missione di un certo operatore (cioè somma delle durata delle missioni in cui è stato coinvolto)
+SELECT O.ID_Operatore,
+       O.Nome,
+       O.Cognome,
+       SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, MC.TimestampFine))) AS TempoTotale
+FROM Operatore O
+JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
+JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE O.ID_Operatore = ?
+GROUP BY O.ID_Operatore, O.Nome, O.Cognome;
 
 
 -- 9. Estrazione delle missioni svoltesi negli ultimi tre anni nello stesso luogo di una missione data.
+-- (Qui noi supponiamo che i dati siano consistenti tra di loro, così da evitare indirzzi uguali e cordinate diverse o viceversa)
 SELECT M2.ID_Missione, M2.Obiettivo, M2.TimeStampInizio, R2.Indirizzo
-FROM MISSIONE M2
-JOIN RICHIESTA R2 ON R2.ID_Richiesta = M2.ID_Richiesta
-JOIN MISSIONE M1 ON M1.ID_Missione = 1 -- che id?
-JOIN RICHIESTA R1 ON R1.ID_Richiesta = M1.ID_Richiesta
-WHERE M2.ID_Missione <> 1  -- che id?
+FROM Missione M2
+JOIN Richiesta R2 ON R2.ID_Richiesta = M2.ID_Richiesta
+JOIN Missione M1 ON M1.ID_Missione = ?
+JOIN Richiesta R1 ON R1.ID_Richiesta = M1.ID_Richiesta
+WHERE M2.ID_Missione <> ?  
   AND M2.TimeStampInizio >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
   AND (R2.Indirizzo = R1.Indirizzo OR R2.Coordinate = R1.Coordinate);
 
@@ -104,13 +123,24 @@ SELECT R.ID_Richiesta,
        MC.Successo,
        MC.Commenti,
        MC.TimestampFine
-FROM RICHIESTA R
-JOIN MISSIONE M ON R.ID_Richiesta = M.ID_Richiesta
-JOIN MISSIONI_COMPLETATE MC ON M.ID_Missione = MC.ID_Missione
+FROM Richiesta R
+JOIN Missione M ON R.ID_Richiesta = M.ID_Richiesta
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
 WHERE MC.Successo < 5;
 
 -- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
 -- (calcolate come alla query precedente).
+SELECT O.ID_Operatore,
+       O.Nome,
+       O.Cognome,
+       COUNT(M.ID_Missione) AS NumeroMissioniNonPositive
+FROM Operatore O
+JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
+JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE MC.Successo < 5
+GROUP BY O.ID_Operatore, O.Nome, O.Cognome
+ORDER BY NumeroMissioniNonPositive DESC;
 
 
 -- 12. Estrazione dello storico delle missioni in cui è stato coinvolto un certo mezzo.
@@ -121,13 +151,22 @@ SELECT
     MC.TimestampFine,
     MC.Commenti,
     MC.Successo
-FROM MEZZO Z
-JOIN MEZZI_USATI_MISSIONE MU ON Z.ID_Mezzo = MU.ID_Mezzo
-JOIN MISSIONE M ON MU.ID_Missione = M.ID_Missione
-LEFT JOIN MISSIONI_COMPLETATE MC ON M.ID_Missione = MC.ID_Missione
-WHERE Z.Nome = 'Ambulanza 1';  	-- che nome?
+FROM Mezzo Z
+JOIN Mezzi_Usati_Missione MU ON Z.ID_Mezzo = MU.ID_Mezzo
+JOIN Missione M ON MU.ID_Missione = M.ID_Missione
+LEFT JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE Z.Nome = ?;
 
 
 
 -- 13. Calcolo delle ore d'uso di un certo materiale (supponiamo che il tempo d'uso uso corrisponda alla durata totale 
 -- della missione in cui è stato assegnato).
+SELECT Mat.ID_Materiale,
+       Mat.Nome,
+       SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, MC.TimestampFine))) AS OreTotaliUso
+FROM Materiale Mat
+JOIN Materiali_Usati_Missione MU ON Mat.ID_Materiale = MU.ID_Materiale
+JOIN Missione M ON MU.ID_Missione = M.ID_Missione
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE Mat.ID_Materiale = ?
+GROUP BY Mat.ID_Materiale, Mat.Nome;

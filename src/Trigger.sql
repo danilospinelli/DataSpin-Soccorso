@@ -99,7 +99,7 @@ BEGIN
 
     SELECT Stato
     INTO stato_richiesta
-    FROM RICHIESTA
+    FROM Richiesta
     WHERE ID_Richiesta = NEW.ID_Richiesta;
 
     IF stato_richiesta = 'Attiva' THEN
@@ -126,7 +126,7 @@ BEGIN
     
     SELECT Stato
     INTO stato_richiesta
-    FROM RICHIESTA
+    FROM Richiesta
     WHERE ID_Richiesta = richiesta;
 
     IF stato_richiesta = 'In Corso' THEN
