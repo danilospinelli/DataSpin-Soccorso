@@ -137,19 +137,4 @@ BEGIN
     END IF;
 END$$
 
--- Vincolo: Quando si inseriscono nuovi Amministratori, vengono creati automaticamente gli Utenti relativi con i loro permessi
--- DROP TRIGGER IF EXISTS trg_creazione_utenti $$
--- CREATE TRIGGER trg_creazione_utenti
--- AFTER INSERT ON Amministratore
--- FOR EACH ROW
--- BEGIN
--- 	   DECLARE username VARCHAR(50);
---     DECLARE pssword VARCHAR(50);
-    
---     SET username = CONCAT(NEW.Cognome, New.Nome);
---     SET pssword = CONCAT(NEW.Cognome, NEW.DataNascita);
-    
---     CREATE USER username IDENTIFIED BY pssword;
--- END$$
-
 DELIMITER ;

@@ -74,6 +74,7 @@ CREATE TABLE Richiesta (
     Coordinate VARCHAR(100) NOT NULL,
     Indirizzo VARCHAR(255) NOT NULL,
     Descrizione TEXT NOT NULL,
+    TimestampRichiesta DATETIME NOT NULL, 
     ID_Segnalatore INT NOT NULL,
     ID_Amministratore INT NOT NULL,
     FOREIGN KEY (ID_Segnalatore) REFERENCES Segnalatore(ID_Segnalatore),
@@ -161,7 +162,7 @@ CREATE TABLE Composizione_Squadra (
 DROP TABLE IF EXISTS Missioni_Concluse;
 CREATE TABLE Missioni_Concluse (
     ID_Missione INT PRIMARY KEY,
-    ID_Squadra INT NOT NULL, -- dà proBlemi con il popolamento
+    ID_Squadra INT NOT NULL,
     Commenti TEXT,
     Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 0 AND 5),
     TimestampFine DATETIME NOT NULL,
@@ -179,3 +180,22 @@ CREATE TABLE Missioni_Aggiornate (
     FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
     FOREIGN KEY (ID_Amministratore) REFERENCES Amministratore(ID_Amministratore)
 );
+
+
+
+-- Ruolo con tutti i permessi da dare agli Amministratori
+DROP ROLE IF EXISTS amministratore; -- test
+CREATE ROLE IF NOT EXISTS amministratore;
+GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Operatore TO amministratore WITH GRANT OPTION;
+GRANT INSERT, UPDATE, DELETE ON soccorso.Mezzo TO amministratore WITH GRANT OPTION;
+GRANT INSERT, UPDATE, DELETE ON soccorso.Materiale TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Missioni_Aggiornate TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Missioni_Concluse TO amministratore WITH GRANT OPTION;
+
+-- Creazione utente con tutti i privilegi per loggare sul codice java
+DROP USER IF EXISTS 'superuser'@'localhost'; -- test
+CREATE USER 'superuser'@'localhost' IDENTIFIED BY 'password123';
+GRANT SELECT ON soccorso.* TO 'superuser'@'localhost' WITH GRANT OPTION;
+GRANT CREATE USER, GRANT OPTION, ROLE_ADMIN ON *.* TO 'superuser'@'localhost';
+FLUSH PRIVILEGES;
