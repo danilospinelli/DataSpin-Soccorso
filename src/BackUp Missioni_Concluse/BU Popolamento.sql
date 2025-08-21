@@ -120,18 +120,14 @@ INSERT INTO Richiesta (IP, Stato, Foto, Coordinate, Indirizzo, Descrizione, Time
 ('192.168.0.10','Chiusa', NULL,'44.4064,8.9339','Piazza San Giovanni, Genova','Incidente nautico', '2025-08-19 17:22:44', 10,10);
 
 -- Missioni
-INSERT INTO Missione (Obiettivo, TimestampInizio, TimestampFine, Commenti, Successo, ID_Richiesta, ID_Squadra) VALUES
-	('Assistenza sanitaria', '2025-02-14 14:15:00', '2025-02-14 15:00:00', 'Paziente stabilizzato', 4, 2, 2),
-    ('Spegnimento incendio', '2025-03-20 18:00:00', '2025-03-20 21:00:00', 'Incendio domato', 5, 3, 3);
-INSERT INTO Missione (Obiettivo, TimestampInizio, ID_Richiesta, ID_Squadra) VALUES    
-    ('Ricerca dispersi', '2025-04-05 09:45:00', 4, 4);
-INSERT INTO Missione (Obiettivo, TimestampInizio, TimestampFine, Commenti, Successo, ID_Richiesta, ID_Squadra) VALUES
-	('Soccorso montagna','2025-06-15 07:00:00', '2025-06-15 11:30:00', 'Soccorso completato', 5, 6, 6);
-INSERT INTO Missione (Obiettivo, TimestampInizio, ID_Richiesta, ID_Squadra) VALUES 
-	('Spegnimento incendio bosco','2025-07-20 13:30:00', 7, 7);
-INSERT INTO Missione (Obiettivo, TimestampInizio, TimestampFine, Commenti, Successo, ID_Richiesta, ID_Squadra) VALUES
-	('Gestione alluvione','2025-09-12 08:45:00', '2025-09-12 13:00:00', 'Alluvione gestita', 4, 9, 9),
-    ('Recupero in mare','2025-10-01 10:00:00', '2025-10-01 12:45:00', 'Recupero riuscito', 5, 10, 10);
+INSERT INTO Missione (Obiettivo, TimestampInizio, ID_Richiesta, ID_Squadra) VALUES
+('Assistenza sanitaria', '2025-02-14 14:15:00', 2, 2),
+('Spegnimento incendio', '2025-03-20 18:00:00', 3, 3),
+('Ricerca dispersi', '2025-04-05 09:45:00', 4, 4),
+('Soccorso montagna','2025-06-15 07:00:00',6,6),
+('Spegnimento incendio bosco','2025-07-20 13:30:00',7,7),
+('Gestione alluvione','2025-09-12 08:45:00',9,9),
+('Recupero in mare','2025-10-01 10:00:00',10,10);
 
 -- Relazioni Amministratori - Patenti
 INSERT INTO Amministratore_Possiede_Patente VALUES
@@ -177,6 +173,14 @@ INSERT INTO Composizione_Squadra VALUES
 (7,8,'Caposquadra'),
 (8,9,'Caposquadra'),
 (9,10,'Caposquadra');
+
+-- Missioni concluse
+INSERT INTO Missioni_Concluse (ID_Missione, Commenti, Successo, TimestampFine) VALUES
+(1,'Paziente stabilizzato',4,'2025-02-14 15:00:00'),
+(2,'Incendio domato',5,'2025-03-20 21:00:00'),
+(4,'Soccorso completato',5,'2025-06-15 11:30:00'),
+(6,'Alluvione gestita',4,'2025-09-12 13:00:00'),
+(7,'Recupero riuscito',5,'2025-10-01 12:45:00');
 
 -- Missioni aggiornate
 INSERT INTO Missioni_Aggiornate VALUES

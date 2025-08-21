@@ -14,11 +14,8 @@ INSERT INTO Missione (Obiettivo, TimeStampInizio, ID_Richiesta, ID_Squadra) VALU
   
 
 -- 3. Chiusura di una missione.
-UPDATE Missione
-SET TimestampFine = '2025-04-05 16:00:00',
-	Commenti = 'Dispersi ritrovati indenni',
-    Successo = 5
-WHERE ID_Missione = 3; -- Chiude la Missione 3
+INSERT INTO Missioni_Concluse (ID_Missione, Commenti, Successo, TimestampFine) VALUES
+(4, 'Missione completata con successo, nessun ferito.', 5, '2025-08-19 00:15:42');
 
 
 -- 4. Estrazione della lista degli operatori non coinvolti in missioni in corso.
@@ -53,13 +50,15 @@ CREATE PROCEDURE query6 (IN anno INT)
 BEGIN
 	IF anno IS NOT NULL THEN
 		-- in un anno specifico
-		SELECT SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, m.TimestampFine))) AS TempoMedio
+		SELECT SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, mc.TimestampFine))) AS TempoMedio
 		FROM Missione m
+		JOIN Missioni_Concluse mc ON m.ID_Missione = mc.ID_Missione
 		WHERE YEAR(m.TimestampInizio) = anno;
     ELSE
 		-- per ciascun caposquadra
-		SELECT cs.ID_Operatore, SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, m.TimestampFine))) AS TempoMedio
+		SELECT cs.ID_Operatore, SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, mc.TimestampFine))) AS TempoMedio
 		FROM Missione m
+		JOIN Missioni_Concluse mc ON m.ID_Missione = mc.ID_Missione
 		JOIN Composizione_Squadra cs ON m.ID_Squadra = cs.ID_Squadra
 		WHERE cs.Ruolo = 'Caposquadra'
 		GROUP BY cs.ID_Operatore;
@@ -97,10 +96,11 @@ BEGIN
     SELECT O.ID_Operatore,
            O.Nome,
            O.Cognome,
-           SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, M.TimestampFine))) AS TempoTotale
+           SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, MC.TimestampFine))) AS TempoTotale
     FROM Operatore O
     JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
     JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
+    JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
     WHERE O.ID_Operatore = operatore
     GROUP BY O.ID_Operatore, O.Nome, O.Cognome;
 END$$
@@ -136,12 +136,13 @@ SELECT R.ID_Richiesta,
        R.Descrizione,
        R.Indirizzo,
        R.Coordinate,
-       M.TimestampFine,
-       M.Successo,
-       M.Commenti
+       MC.Successo,
+       MC.Commenti,
+       MC.TimestampFine
 FROM Richiesta R
 JOIN Missione M ON R.ID_Richiesta = M.ID_Richiesta
-WHERE M.Successo < 5;
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE MC.Successo < 5;
 
 
 -- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
@@ -153,7 +154,8 @@ SELECT O.ID_Operatore,
 FROM Operatore O
 JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
 JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
-WHERE M.Successo < 5
+JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
+WHERE MC.Successo < 5
 GROUP BY O.ID_Operatore, O.Nome, O.Cognome
 ORDER BY NumeroMissioniNonPositive DESC;
 
@@ -166,12 +168,13 @@ BEGIN
         M.ID_Missione,
         M.Obiettivo,
         M.TimeStampInizio,
-        M.TimestampFine,
-        M.Commenti,
-        M.Successo
+        MC.TimestampFine,
+        MC.Commenti,
+        MC.Successo
     FROM Mezzo Z
     JOIN Mezzi_Usati_Missione MU ON Z.ID_Mezzo = MU.ID_Mezzo
     JOIN Missione M ON MU.ID_Missione = M.ID_Missione
+    LEFT JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
     WHERE Z.ID_Mezzo = mezzo;
 END$$
 DELIMITER ;
@@ -187,10 +190,11 @@ BEGIN
     SELECT 
         Mat.ID_Materiale,
         Mat.Nome,
-        SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, M.TimestampFine))) AS OreTotaliUso
+        SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, MC.TimestampFine))) AS OreTotaliUso
     FROM Materiale Mat
     JOIN Materiali_Usati_Missione MU ON Mat.ID_Materiale = MU.ID_Materiale
     JOIN Missione M ON MU.ID_Missione = M.ID_Missione
+    JOIN Missioni_Concluse MC ON M.ID_Missione = MC.ID_Missione
     WHERE Mat.ID_Materiale = materiale
     GROUP BY Mat.ID_Materiale, Mat.Nome;
 END$$

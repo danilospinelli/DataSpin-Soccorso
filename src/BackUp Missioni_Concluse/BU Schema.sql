@@ -86,11 +86,6 @@ CREATE TABLE Missione (
     ID_Missione INT PRIMARY KEY AUTO_INCREMENT,
     Obiettivo TEXT NOT NULL,
     TimestampInizio DATETIME NOT NULL,
-    -- Fine Missione
-    TimestampFine DATETIME DEFAULT NULL,
-    Commenti TEXT DEFAULT NULL,
-    Successo TINYINT UNSIGNED CHECK (Successo BETWEEN 0 AND 5) DEFAULT NULL,
-    -- --------------
     ID_Richiesta INT NOT NULL UNIQUE,
     ID_Squadra INT NOT NULL,
     FOREIGN KEY (ID_Richiesta) REFERENCES Richiesta(ID_Richiesta),
@@ -164,6 +159,17 @@ CREATE TABLE Composizione_Squadra (
     FOREIGN KEY (ID_Operatore) REFERENCES Operatore(ID_Operatore)
 );
 
+DROP TABLE IF EXISTS Missioni_Concluse;
+CREATE TABLE Missioni_Concluse (
+    ID_Missione INT PRIMARY KEY,
+    ID_Squadra INT NOT NULL,
+    Commenti TEXT,
+    Successo TINYINT UNSIGNED NOT NULL CHECK (Successo BETWEEN 0 AND 5),
+    TimestampFine DATETIME NOT NULL,
+    FOREIGN KEY (ID_Missione) REFERENCES Missione(ID_Missione),
+    FOREIGN KEY (ID_Squadra) REFERENCES Squadra(ID_Squadra)
+);
+
 DROP TABLE IF EXISTS Missioni_Aggiornate;
 CREATE TABLE Missioni_Aggiornate (
     ID_Missione INT NOT NULL,
@@ -178,7 +184,6 @@ CREATE TABLE Missioni_Aggiornate (
 
 
 -- Ruolo con tutti i permessi da dare agli Amministratori
-SELECT user, host FROM mysql.user;
 DROP ROLE IF EXISTS amministratore; -- test
 CREATE ROLE IF NOT EXISTS amministratore;
 GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION;
