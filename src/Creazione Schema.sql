@@ -186,7 +186,6 @@ GRANT INSERT ON soccorso.Operatore TO amministratore WITH GRANT OPTION;
 GRANT INSERT, UPDATE, DELETE ON soccorso.Mezzo TO amministratore WITH GRANT OPTION;
 GRANT INSERT, UPDATE, DELETE ON soccorso.Materiale TO amministratore WITH GRANT OPTION;
 GRANT INSERT ON soccorso.Missioni_Aggiornate TO amministratore WITH GRANT OPTION;
-GRANT INSERT ON soccorso.Missioni_Concluse TO amministratore WITH GRANT OPTION;
 
 -- Creazione utente con tutti i privilegi per loggare sul codice java
 DROP USER IF EXISTS 'superuser'@'localhost'; -- test

@@ -106,7 +106,7 @@ BEGIN
 END$$
 DELIMITER ;
 
-CALL qury8(3); -- Calcola il tempo per l'Operatore 3
+CALL query8(3); -- Calcola il tempo per l'Operatore 3
 
 
 -- 9. Estrazione delle missioni svoltesi negli ultimi tre anni nello stesso luogo di una missione data.
@@ -132,6 +132,7 @@ CALL query9(5); -- Calcola per la Missione 5
 
 
 -- 10. Estrazione della lista delle richieste di soccorso chiuse con risultato non totalmente positivo (livello di successo minore di 5).
+CREATE OR REPLACE VIEW RichiesteNonPositive AS
 SELECT R.ID_Richiesta,
        R.Descrizione,
        R.Indirizzo,
@@ -141,19 +142,19 @@ SELECT R.ID_Richiesta,
        M.Commenti
 FROM Richiesta R
 JOIN Missione M ON R.ID_Richiesta = M.ID_Richiesta
-WHERE M.Successo < 5;
+WHERE M.Successo IS NOT NULL AND M.Successo < 5;
 
 
 -- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
 -- (calcolate come alla query precedente).
 SELECT O.ID_Operatore,
-       O.Nome,
-       O.Cognome,
+	   O.Nome,
+	   O.Cognome,
        COUNT(M.ID_Missione) AS NumeroMissioniNonPositive
 FROM Operatore O
 JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
 JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
-WHERE M.Successo < 5
+JOIN RichiesteNonPositive V ON V.ID_Richiesta = M.ID_Richiesta
 GROUP BY O.ID_Operatore, O.Nome, O.Cognome
 ORDER BY NumeroMissioniNonPositive DESC;
 
