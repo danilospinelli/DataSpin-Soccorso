@@ -144,6 +144,8 @@ FROM Richiesta R
 JOIN Missione M ON R.ID_Richiesta = M.ID_Richiesta
 WHERE M.Successo IS NOT NULL AND M.Successo < 5;
 
+SELECT * FROM RichiesteNonPositive;
+
 
 -- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
 -- (calcolate come alla query precedente).

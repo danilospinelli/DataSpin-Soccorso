@@ -79,11 +79,13 @@ BEGIN
     END IF;
 END$$
 
--- Vincolo: Una richiesta può diventare una missione se e solo se il suo stato è "Attiva"
+-- Vincolo: Una richiesta può diventare una missione se e solo se il suo stato è "Attiva" e gli attributi TimestampFine, Successo e Commenti
+-- sono NULL
 DROP TRIGGER IF EXISTS check_richiesta_attiva $$
 CREATE TRIGGER check_richiesta_attiva
 BEFORE INSERT ON MISSIONE
 FOR EACH ROW
+PRECEDES check_missione_tsinizio
 BEGIN
     DECLARE stato_richiesta VARCHAR(20);
 
@@ -92,38 +94,134 @@ BEGIN
     FROM Richiesta
     WHERE ID_Richiesta = NEW.ID_Richiesta;
 
-    IF stato_richiesta = 'Attiva' THEN
-		UPDATE Richiesta SET Stato = 'In Corso' WHERE ID_Richiesta = NEW.ID_Richiesta;
-	ELSE
-        SIGNAL SQLSTATE '45000'
+    IF stato_richiesta <> 'Attiva' THEN
+		SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Impossibile creare la missione: richiesta non attiva';
+	ELSE -- La Richiesta è Attiva
+		IF (NEW.TimestampFine IS NULL) AND (NEW.Successo IS NULL) AND (NEW.Commenti IS NULL) THEN
+			UPDATE Richiesta SET Stato = 'In Corso' WHERE ID_Richiesta = NEW.ID_Richiesta;
+		ELSE
+			SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Impossibile creare la missione: stai chiudendo una Missione non ancora creata';
+		END IF;
     END IF;
 END$$
 
--- Vincolo: Una missione può essere conclusa se e solo se lo stato della richiesta relativa è "In Corso"
-DROP TRIGGER IF EXISTS check_richiesta_in_corso $$
-CREATE TRIGGER check_richiesta_in_corso
-BEFORE INSERT ON Missioni_Concluse
+-- Vincolo: Gli attributi TimestampFine, Successo e Commenti di Missione possono essere inseriti se e solo se lo stato della Richiesta relativa
+-- è "In Corso"; se tutti vengono inseriti (tranne Commenti che è opzionale), lo stato passa a "Chiusa"
+DROP TRIGGER IF EXISTS check_fine_missione $$
+CREATE TRIGGER check_fine_missione
+BEFORE UPDATE ON Missione
 FOR EACH ROW
+FOLLOWS check_missione_chiusa
 BEGIN
 	DECLARE richiesta INT;
-    DECLARE stato_richiesta VARCHAR(20);
-
-    SELECT ID_Richiesta
-    INTO richiesta
-    FROM Missione
-    WHERE ID_Missione = NEW.ID_Missione;
+	DECLARE stato_richiesta VARCHAR(20);
+    -- Il Trigger agisce solo se sto aggiornando gli attributi interessati
+    IF (NEW.TimestampFine IS NOT NULL) OR (NEW.Successo IS NOT NULL) OR (NEW.Commenti IS NOT NULL) THEN
+		SELECT ID_Richiesta
+		INTO richiesta
+		FROM Missione
+		WHERE ID_Missione = NEW.ID_Missione;
     
+		SELECT Stato
+		INTO stato_richiesta
+		FROM Richiesta
+		WHERE ID_Richiesta = richiesta;
+
+		IF stato_richiesta <> 'In Corso' THEN
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile chiudere la missione: richiesta non in corso';
+		ELSE -- La Richiesta è In Corso
+			IF (NEW.TimestampFine IS NOT NULL) AND (NEW.Successo IS NOT NULL) THEN
+				UPDATE Richiesta SET Stato = 'Chiusa' WHERE ID_Richiesta = richiesta;
+			ELSE
+				SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile chiudere la missione: mancano alcuni valori';
+			END IF;
+		END IF;
+    END IF;
+END$$
+
+-- Vincolo: Se inserisco una nuova Missione, il suo TimestampInzio deve essere successivo al TimestampRichiesta della Richiesta relativa
+DROP TRIGGER IF EXISTS check_missione_tsinizio $$
+CREATE TRIGGER check_missione_tsinizio
+BEFORE INSERT ON MISSIONE
+FOR EACH ROW
+FOLLOWS check_richiesta_attiva
+BEGIN
+    DECLARE ts_richiesta DATETIME;
+
+	SELECT TimestampRichiesta
+	INTO ts_richiesta
+	FROM Richiesta
+	WHERE ID_Richiesta = NEW.ID_Richiesta;
+        
+	IF NEW.TimestampInizio < ts_richiesta THEN
+		SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile inserire la missione: Timestamp incoerente con la Richiesta';
+	END IF;
+END$$
+
+-- Vincolo: Se chiudo una Missione, il suo TimestampFine deve essere successivo al TimestampInizio
+DROP TRIGGER IF EXISTS check_missione_tsfine $$
+CREATE TRIGGER check_missione_tsfine
+BEFORE UPDATE ON MISSIONE
+FOR EACH ROW
+FOLLOWS check_fine_missione
+BEGIN
+    IF NEW.TimestampFine < NEW.TimestampInizio THEN
+		SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile inserire la missione: Timestamp incoerente con la Missione';
+	END IF;
+END$$
+
+-- Vincolo: Se modifico lo stato di una Richiesta, l'unico che posso inserire manualmente è 'Annullata', altrimenti errore
+DROP TRIGGER IF EXISTS check_richiesta_update_stato $$
+CREATE TRIGGER check_richiesta_update_stato
+AFTER UPDATE ON Richiesta
+FOR EACH ROW
+BEGIN
+    DECLARE missione INT;
+    
+    IF OLD.Stato <> NEW.Stato AND NEW.Stato <> 'Annullata'THEN
+		SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile cambiare stato richiesta: incoerenza con la missione relativa';
+	END IF;
+END$$
+
+-- Vincolo: Lo stato iniziale di una Richiesta deve essere 'Inviata'; se così non fosse, lo corregge e lo notifica
+DROP TRIGGER IF EXISTS check_richiesta_update_stato $$
+CREATE TRIGGER check_richiesta_update_stato
+BEFORE INSERT ON Richiesta
+FOR EACH ROW
+BEGIN
+	IF NEW.Stato <> 'Inviata' THEN
+		SET NEW.Stato = 'Inviata';
+        
+        -- Genero un warning (non blocca l’Insert)
+        SIGNAL SQLSTATE '01000'
+            SET MESSAGE_TEXT = 'Stato iniziale non valido: impostato automaticamente a Inviata';
+    END IF;
+END$$
+
+-- Vincolo: Se una Richiesta è Chiusa o Annullata (terminata), la Missione relativa è ormai archiviata e non può più essere modificata
+DROP TRIGGER IF EXISTS check_missione_chiusa $$
+CREATE TRIGGER check_missione_chiusa
+BEFORE UPDATE ON Missione
+FOR EACH ROW
+PRECEDES check_fine_missione
+BEGIN
+     DECLARE stato_richiesta VARCHAR(20);
+
     SELECT Stato
     INTO stato_richiesta
     FROM Richiesta
-    WHERE ID_Richiesta = richiesta;
+    WHERE ID_Richiesta = NEW.ID_Richiesta;
 
-    IF stato_richiesta = 'In Corso' THEN
-		UPDATE Richiesta SET Stato = 'Chiusa' WHERE ID_Richiesta = richiesta;
-	ELSE
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Impossibile creare la missione: richiesta non attiva';
+    IF stato_richiesta = 'Chiusa' OR stato_richiesta = 'Annullata' THEN
+		SIGNAL SQLSTATE '45000'
+					SET MESSAGE_TEXT = 'Impossibile aggiornare la missione: la missione è ormai archiviata';
     END IF;
 END$$
 

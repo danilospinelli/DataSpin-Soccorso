@@ -70,7 +70,7 @@ CREATE TABLE Richiesta (
     Link VARCHAR(255) NOT NULL,
     IP VARCHAR(45) NOT NULL,
     Stato ENUM('Inviata','Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Inviata',
-    Foto VARCHAR(255), -- meglio salvare il percorso o URL / LONGBLOB?
+    Foto VARCHAR(255), 
     Coordinate VARCHAR(100) NOT NULL,
     Indirizzo VARCHAR(255) NOT NULL,
     Descrizione TEXT NOT NULL,
@@ -178,14 +178,25 @@ CREATE TABLE Missioni_Aggiornate (
 
 
 -- Ruolo con tutti i permessi da dare agli Amministratori
-SELECT user, host FROM mysql.user;
 DROP ROLE IF EXISTS amministratore; -- test
-CREATE ROLE IF NOT EXISTS amministratore;
-GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION;
+CREATE ROLE amministratore;
+GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION; -- Creare account per Operatori e Amministratori
 GRANT INSERT ON soccorso.Operatore TO amministratore WITH GRANT OPTION;
-GRANT INSERT, UPDATE, DELETE ON soccorso.Mezzo TO amministratore WITH GRANT OPTION;
+GRANT INSERT, UPDATE, DELETE ON soccorso.Mezzo TO amministratore WITH GRANT OPTION; -- Aggiungere, modificare, eliminare Mezzi e Materiali
 GRANT INSERT, UPDATE, DELETE ON soccorso.Materiale TO amministratore WITH GRANT OPTION;
-GRANT INSERT ON soccorso.Missioni_Aggiornate TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Missioni_Aggiornate TO amministratore WITH GRANT OPTION; -- Inserire Aggiornamenti sulle Missioni
+GRANT UPDATE ON soccorso.Missione TO amministratore WITH GRANT OPTION; -- Marcare una Missione come conclusa (aggiungere gli attributi finali)
+-- Permessi Extra
+GRANT INSERT ON soccorso.Missione TO amministratore WITH GRANT OPTION; -- Inserire Missioni
+GRANT INSERT ON soccorso.Amministratore_Possiede_Patente TO amministratore WITH GRANT OPTION; -- Assegnare Patenti e Abilità a 
+GRANT INSERT ON soccorso.Amministratore_Possiede_Abilita TO amministratore WITH GRANT OPTION; -- Operatori e Amministratori
+GRANT INSERT ON soccorso.Operatore_Possiede_Patente TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Operatore_Possiede_Abilita TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Mezzi_Usati_Missione TO amministratore WITH GRANT OPTION; -- Assegnare Mezzi e Materiali alle Missioni
+GRANT INSERT ON soccorso.Materiali_Usati_Missione TO amministratore WITH GRANT OPTION;
+GRANT INSERT ON soccorso.Composizione_Squadra TO amministratore WITH GRANT OPTION; -- Assegnare Operatori alle Squadre
+GRANT INSERT ON soccorso.Squadra TO amministratore WITH GRANT OPTION; -- Creare Squadre
+GRANT UPDATE ON soccorso.Richiesta TO amministratore WITH GRANT OPTION; -- Aggiornare le Richieste (per marcarle come Annullate)
 
 -- Creazione utente con tutti i privilegi per loggare sul codice java
 DROP USER IF EXISTS 'superuser'@'localhost'; -- test
