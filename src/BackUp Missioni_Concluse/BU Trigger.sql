@@ -4,6 +4,16 @@
 
 DELIMITER $$
 
+-- Vincolo: quando chiudi una Missione in Missioni_Concluse ci deve essere una coerenza con la Squadra usata in quella missione 
+-- (usiamo il trigger per non dover rispecificare ID_Squadra per chiudere una Missione)
+DROP TRIGGER IF EXISTS trg_squadra_missione_conclusa $$
+CREATE TRIGGER trg_squadra_missione_conclusa
+BEFORE INSERT ON Missioni_Concluse
+FOR EACH ROW
+BEGIN
+    SET NEW.ID_Squadra = (SELECT ID_Squadra FROM Missione WHERE ID_Missione = NEW.ID_Missione);
+END$$
+
 -- Vincolo: Alle Richieste devono essere associate delle stringhe lunghe e casuali, che saranno poi i Link
 DROP TRIGGER IF EXISTS trg_link_casuale $$
 CREATE TRIGGER trg_link_casuale
