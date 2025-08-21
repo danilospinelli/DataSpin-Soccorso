@@ -184,6 +184,7 @@ CREATE TABLE Missioni_Aggiornate (
 
 
 -- Ruolo con tutti i permessi da dare agli Amministratori
+SELECT user, host FROM mysql.user;
 DROP ROLE IF EXISTS amministratore; -- test
 CREATE ROLE IF NOT EXISTS amministratore;
 GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION;
