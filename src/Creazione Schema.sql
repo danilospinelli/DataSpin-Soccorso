@@ -69,7 +69,7 @@ CREATE TABLE Richiesta (
     ID_Richiesta INT PRIMARY KEY AUTO_INCREMENT,
     Link VARCHAR(255) NOT NULL,
     IP VARCHAR(45) NOT NULL,
-    Stato ENUM('Inviata','Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Inviata',
+    Stato ENUM('Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Attiva',
     Foto VARCHAR(255), 
     Coordinate VARCHAR(100) NOT NULL,
     Indirizzo VARCHAR(255) NOT NULL,

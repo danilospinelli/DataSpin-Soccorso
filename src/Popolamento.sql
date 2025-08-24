@@ -108,16 +108,16 @@ INSERT INTO Segnalatore (Nome, Cognome, Email) VALUES
 
 -- Richieste
 INSERT INTO Richiesta (IP, Stato, Foto, Coordinate, Indirizzo, Descrizione, TimestampRichiesta, ID_Segnalatore, ID_Amministratore) VALUES
-('192.168.0.1', 'Inviata', 'https://drive.google.com/file/d/1phBFwNtTshERYU7-qBAY7uN998Y2QZvc/view?usp=sharing', '45.4642,9.19', 'Via Roma 10, Milano', 'Incidente stradale', '2025-08-19 12:45:23', 1, 1),
-('192.168.0.2', 'Chiusa', NULL, '41.9028,12.4964', 'Piazza Venezia, Roma', 'Malore improvviso', '2025-08-19 09:18:57', 2, 2),
-('192.168.0.3', 'Chiusa', NULL, '40.8518,14.2681', 'Via Toledo, Napoli', 'Incendio appartamento', '2025-08-19 16:02:41', 3, 3),
-('192.168.0.4', 'In Corso', NULL, '44.4949,11.3426', 'Piazza Maggiore, Bologna', 'Escursionista disperso', '2025-08-18 23:59:10', 4, 4),
+('192.168.0.1', 'Attiva', 'https://drive.google.com/file/d/1phBFwNtTshERYU7-qBAY7uN998Y2QZvc/view?usp=sharing', '45.4642,9.19', 'Via Roma 10, Milano', 'Incidente stradale', '2025-08-19 12:45:23', 1, 1),
+('192.168.0.2', 'Attiva', NULL, '41.9028,12.4964', 'Piazza Venezia, Roma', 'Malore improvviso', '2025-08-19 09:18:57', 2, 2),
+('192.168.0.3', 'Attiva', NULL, '40.8518,14.2681', 'Via Toledo, Napoli', 'Incendio appartamento', '2025-08-19 16:02:41', 3, 3),
+('192.168.0.4', 'Attiva', NULL, '44.4949,11.3426', 'Piazza Maggiore, Bologna', 'Escursionista disperso', '2025-08-18 23:59:10', 4, 4),
 ('192.168.0.5', 'Attiva', NULL, '45.4384,10.9916', 'Piazza Bra, Verona', 'Caduta in montagna', '2025-08-19 14:37:05', 5, 5),
-('192.168.0.6', 'Chiusa', NULL,'45.0703,7.6869','Piazza Castello, Torino','Infortunio in montagna', '2025-08-19 08:12:48', 6,6),
-('192.168.0.7','In Corso', 'https://drive.google.com/file/d/1Ssc4Qn03QhhmaQ96jGGx-MP2zucT1o15/view?usp=sharing','44.6471,10.9252','Piazza Verdi, Parma','Incendio bosco', '2025-08-19 15:50:33', 7,7),
-('192.168.0.8','Attiva', NULL,'45.5017,9.2067','Via XX Settembre, Como','Persona dispersa', '2025-08-19 00:27:19', 8,8),
-('192.168.0.9','Chiusa', 'https://drive.google.com/file/d/1F7V3-q3eEf-imyrxSFG00uYpRsD90tOr/view?usp=sharing','46.0667,11.1211','Piazza Duomo, Bolzano','Alluvione', '2025-08-19 11:05:57', 9,9),
-('192.168.0.10','Chiusa', NULL,'44.4064,8.9339','Piazza San Giovanni, Genova','Incidente nautico', '2025-08-19 17:22:44', 10,10);
+('192.168.0.6', 'Attiva', NULL,'45.0703,7.6869','Piazza Castello, Torino','Infortunio in montagna', '2025-08-19 08:12:48', 6,6),
+('192.168.0.7', 'Attiva', 'https://drive.google.com/file/d/1Ssc4Qn03QhhmaQ96jGGx-MP2zucT1o15/view?usp=sharing','44.6471,10.9252','Piazza Verdi, Parma','Incendio bosco', '2025-08-19 15:50:33', 7,7),
+('192.168.0.8', 'Attiva', NULL,'45.5017,9.2067','Via XX Settembre, Como','Persona dispersa', '2025-08-19 00:27:19', 8,8),
+('192.168.0.9', 'Attiva', 'https://drive.google.com/file/d/1F7V3-q3eEf-imyrxSFG00uYpRsD90tOr/view?usp=sharing','46.0667,11.1211','Piazza Duomo, Bolzano','Alluvione', '2025-08-19 11:05:57', 9,9),
+('192.168.0.10', 'Attiva', NULL,'44.4064,8.9339','Piazza San Giovanni, Genova','Incidente nautico', '2025-08-19 17:22:44', 10,10);
 
 -- Missioni
 INSERT INTO Missione (Obiettivo, TimestampInizio, TimestampFine, Commenti, Successo, ID_Richiesta, ID_Squadra) VALUES

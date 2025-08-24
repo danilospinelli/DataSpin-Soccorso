@@ -97,7 +97,7 @@ BEGIN
     SELECT O.ID_Operatore,
            O.Nome,
            O.Cognome,
-           SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimeStampInizio, M.TimestampFine))) AS TempoTotale
+           SEC_TO_TIME(SUM(TIMESTAMPDIFF(SECOND, M.TimestampInizio, M.TimestampFine))) AS TempoTotale
     FROM Operatore O
     JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
     JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
@@ -110,7 +110,7 @@ CALL query8(3); -- Calcola il tempo per l'Operatore 3
 
 
 -- 9. Estrazione delle missioni svoltesi negli ultimi tre anni nello stesso luogo di una missione data.
--- (Qui noi supponiamo che i dati siano consistenti tra di loro, così da evitare indirzzi uguali e cordinate diverse o viceversa)
+-- (Qui noi supponiamo che i dati siano consistenti tra di loro, così da evitare indirzzi uguali e coordinate diverse o viceversa)
 DELIMITER $$
 CREATE PROCEDURE query9(IN missione INT)
 BEGIN
@@ -123,7 +123,7 @@ BEGIN
     JOIN Missione M1 ON M1.ID_Missione = missione
     JOIN Richiesta R1 ON R1.ID_Richiesta = M1.ID_Richiesta
     WHERE M2.ID_Missione <> missione  
-      AND M2.TimeStampInizio >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
+      AND M2.TimestampInizio >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
       AND (R2.Indirizzo = R1.Indirizzo OR R2.Coordinate = R1.Coordinate);
 END$$
 DELIMITER ;
