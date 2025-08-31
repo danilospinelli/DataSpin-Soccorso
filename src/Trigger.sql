@@ -4,19 +4,7 @@
 
 DELIMITER $$
 
--- Vincolo: Alle Richieste devono essere associate delle stringhe lunghe e casuali, che saranno poi i Link
-DROP TRIGGER IF EXISTS trg_link_casuale $$
-CREATE TRIGGER trg_link_casuale
-BEFORE INSERT ON Richiesta
-FOR EACH ROW
-BEGIN
-   IF NEW.Link IS NULL OR NEW.Link = '' THEN
-		SET NEW.Link = CONCAT('https://', UUID());
-   END IF;
-END$$
-
 -- Vincolo: una squadra deve avere almeno un Caposquadra
-DROP TRIGGER IF EXISTS trg_check_caposquadra_insert $$
 CREATE TRIGGER trg_check_caposquadra_insert
 BEFORE INSERT ON Composizione_Squadra
 FOR EACH ROW
@@ -34,8 +22,7 @@ BEGIN
     END IF;
 END$$
 
--- Vincolo: se elimini un operatore da una squadra ci deve sempre rimanere almeno un caposquadra
-DROP TRIGGER IF EXISTS trg_check_caposquadra_delete $$
+-- Vincolo: se elimini un operatore da una squadra ci deve sempre rimanere almeno un Caposquadra
 CREATE TRIGGER trg_check_caposquadra_delete
 BEFORE DELETE ON Composizione_Squadra
 FOR EACH ROW
@@ -58,7 +45,6 @@ END$$
 
 
 -- Vincolo: se aggiorni il ruolo di un operatore, deve comunque rimanere almeno un Caposquadra
-DROP TRIGGER IF EXISTS trg_check_caposquadra_update $$
 CREATE TRIGGER trg_check_caposquadra_update
 BEFORE UPDATE ON Composizione_Squadra
 FOR EACH ROW
@@ -81,11 +67,9 @@ END$$
 
 -- Vincolo: Una richiesta può diventare una missione se e solo se il suo stato è "Attiva" e gli attributi TimestampFine, Successo e Commenti
 -- sono NULL
-DROP TRIGGER IF EXISTS check_richiesta_attiva $$
 CREATE TRIGGER check_richiesta_attiva
 BEFORE INSERT ON MISSIONE
 FOR EACH ROW
-PRECEDES check_missione_tsinizio
 BEGIN
     DECLARE stato_richiesta VARCHAR(20);
 
@@ -99,7 +83,9 @@ BEGIN
             SET MESSAGE_TEXT = 'Impossibile creare la missione: richiesta non attiva';
 	ELSE -- La Richiesta è Attiva
 		IF (NEW.TimestampFine IS NULL) AND (NEW.Successo IS NULL) AND (NEW.Commenti IS NULL) THEN
+			SET @skip_richiesta_check = 1;
 			UPDATE Richiesta SET Stato = 'In Corso' WHERE ID_Richiesta = NEW.ID_Richiesta;
+            SET @skip_richiesta_check = NULL;
 		ELSE
 			SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Impossibile creare la missione: stai chiudendo una Missione non ancora creata';
@@ -107,42 +93,43 @@ BEGIN
     END IF;
 END$$
 
--- Vincolo: Gli attributi TimestampFine, Successo e Commenti se vengono inseriti (tranne Commenti che è opzionale), lo stato passa a "Chiusa"
-CREATE TRIGGER chiudi_richiesta_after_update
-AFTER UPDATE ON Missione
+-- Vincolo: Gli attributi TimestampFine, Successo e Commenti di Missione possono essere inseriti se e solo se lo stato della Richiesta relativa
+-- è "In Corso"; se tutti vengono inseriti (tranne Commenti che è opzionale), lo stato passa a "Chiusa"
+CREATE TRIGGER check_fine_missione
+BEFORE UPDATE ON Missione
 FOR EACH ROW
 BEGIN
-    IF NEW.Successo IS NOT NULL AND NEW.TimestampFine IS NOT NULL THEN
-        UPDATE Richiesta
-        SET Stato = 'Chiusa'
-        WHERE ID_Richiesta = NEW.ID_Richiesta
-          AND Stato <> 'Chiusa';
-    END IF;
-END$$
+	DECLARE richiesta INT;
+	DECLARE stato_richiesta VARCHAR(20);
+    -- Il Trigger agisce solo se sto aggiornando gli attributi interessati
+    IF (NEW.TimestampFine IS NOT NULL) OR (NEW.Successo IS NOT NULL) OR (NEW.Commenti IS NOT NULL) THEN
+		SELECT ID_Richiesta
+		INTO richiesta
+		FROM Missione
+		WHERE ID_Missione = NEW.ID_Missione;
+    
+		SELECT Stato
+		INTO stato_richiesta
+		FROM Richiesta
+		WHERE ID_Richiesta = richiesta;
 
-
--- Vincolo: Se la missione è già completa (ha Successo e TimestampFine) richiesta diventa 'Chiusa'. 
--- Se la missione non è completa richiesta passa da 'Attiva' a 'In Corso'.
-CREATE TRIGGER aggiorna_richiesta_after_insert
-AFTER INSERT ON Missione
-FOR EACH ROW
-BEGIN
-    -- Se la missione ha Successo e TimestampFine valorizzati → Chiusa
-    IF NEW.Successo IS NOT NULL AND NEW.TimestampFine IS NOT NULL THEN
-        UPDATE Richiesta
-        SET Stato = 'Chiusa'
-        WHERE ID_Richiesta = NEW.ID_Richiesta;
-    ELSE
-        -- Altrimenti, se la richiesta era solo 'Inviata', passa a 'In Corso'
-        UPDATE Richiesta
-        SET Stato = 'In Corso'
-        WHERE ID_Richiesta = NEW.ID_Richiesta
-          AND Stato = 'Attiva';
+		IF stato_richiesta <> 'In Corso' THEN
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile chiudere la missione: richiesta non in corso';
+		ELSE -- La Richiesta è In Corso
+			IF (NEW.TimestampFine IS NOT NULL) AND (NEW.Successo IS NOT NULL) THEN
+				SET @skip_richiesta_check = 1;
+				UPDATE Richiesta SET Stato = 'Chiusa' WHERE ID_Richiesta = richiesta;
+                SET @skip_richiesta_check = NULL;
+			ELSE
+				SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Impossibile chiudere la missione: mancano alcuni valori';
+			END IF;
+		END IF;
     END IF;
 END$$
 
 -- Vincolo: Se inserisco una nuova Missione, il suo TimestampInzio deve essere successivo al TimestampRichiesta della Richiesta relativa
-DROP TRIGGER IF EXISTS check_missione_tsinizio $$
 CREATE TRIGGER check_missione_tsinizio
 BEFORE INSERT ON MISSIONE
 FOR EACH ROW
@@ -162,7 +149,6 @@ BEGIN
 END$$
 
 -- Vincolo: Se chiudo una Missione, il suo TimestampFine deve essere successivo al TimestampInizio
-DROP TRIGGER IF EXISTS check_missione_tsfine $$
 CREATE TRIGGER check_missione_tsfine
 BEFORE UPDATE ON MISSIONE
 FOR EACH ROW
@@ -174,37 +160,36 @@ BEGIN
 	END IF;
 END$$
 
--- Vincolo: Se modifico lo stato di una Richiesta, l'unico che posso inserire manualmente è 'Annullata', altrimenti errore
-DROP TRIGGER IF EXISTS check_richiesta_update_stato $$
+-- Vincolo: Se modifico lo stato di una Richiesta, l'unico che posso inserire manualmente è 'Annullata', altrimenti errore; il trigger
+-- parte solo se la modifica avviene manualmente, se avviene tramite trigger (che stabiliscono l'ordine corretto dei cambi di stato)
+-- questo trigger non parte
 CREATE TRIGGER check_richiesta_update_stato
 AFTER UPDATE ON Richiesta
 FOR EACH ROW
 BEGIN
-    DECLARE missione INT;
-    
-    IF OLD.Stato <> NEW.Stato AND NEW.Stato <> 'Annullata'THEN
-		SIGNAL SQLSTATE '45000'
-				SET MESSAGE_TEXT = 'Impossibile cambiare stato richiesta: incoerenza con la missione relativa';
+    IF @skip_richiesta_check IS NULL THEN
+		IF OLD.Stato <> NEW.Stato AND NEW.Stato <> 'Annullata'THEN
+			SIGNAL SQLSTATE '45000'
+					SET MESSAGE_TEXT = 'Impossibile cambiare stato richiesta: incoerenza con la missione relativa';
+		END IF;
 	END IF;
 END$$
 
--- Vincolo: Lo stato iniziale di una Richiesta deve essere 'Attiva'; se così non fosse, lo corregge e lo notifica
-DROP TRIGGER IF EXISTS check_richiesta_stato_before_insert $$
-CREATE TRIGGER check_richiesta_stato_before_insert
+-- Vincolo: Lo stato iniziale di una Richiesta deve essere 'Inviata'; se così non fosse, lo corregge e lo notifica
+CREATE TRIGGER check_richiesta_stato_iniziale
 BEFORE INSERT ON Richiesta
 FOR EACH ROW
 BEGIN
-	IF NEW.Stato <> 'Attiva' THEN
-		SET NEW.Stato = 'Attiva';
+	IF NEW.Stato <> 'Inviata' THEN
+		SET NEW.Stato = 'Inviata';
         
         -- Genero un warning (non blocca l’Insert)
         SIGNAL SQLSTATE '01000'
-            SET MESSAGE_TEXT = 'Stato iniziale non valido: impostato automaticamente a Attiva';
+            SET MESSAGE_TEXT = 'Stato iniziale non valido: impostato automaticamente a Inviata';
     END IF;
 END$$
 
 -- Vincolo: Se una Richiesta è Chiusa o Annullata (terminata), la Missione relativa è ormai archiviata e non può più essere modificata
-DROP TRIGGER IF EXISTS check_missione_chiusa $$
 CREATE TRIGGER check_missione_chiusa
 BEFORE UPDATE ON Missione
 FOR EACH ROW

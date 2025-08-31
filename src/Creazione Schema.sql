@@ -1,4 +1,3 @@
-DROP SCHEMA IF EXISTS soccorso;
 CREATE SCHEMA soccorso;
 USE soccorso;
 
@@ -8,7 +7,6 @@ USE soccorso;
 
 -- Entità
 
-DROP TABLE IF EXISTS Amministratore;
 CREATE TABLE Amministratore (
     ID_Amministratore INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
@@ -16,7 +14,6 @@ CREATE TABLE Amministratore (
     DataNascita DATE NOT NULL
 );
 
-DROP TABLE IF EXISTS Operatore;
 CREATE TABLE Operatore (
     ID_Operatore INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
@@ -24,39 +21,33 @@ CREATE TABLE Operatore (
     DataNascita DATE NOT NULL
 );
 
-DROP TABLE IF EXISTS Squadra;
 CREATE TABLE Squadra (
     ID_Squadra INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL
 );
 
-DROP TABLE IF EXISTS Patente;
 CREATE TABLE Patente (
     ID_Patente INT PRIMARY KEY AUTO_INCREMENT,
     Tipo VARCHAR(30) NOT NULL UNIQUE
 );
 
-DROP TABLE IF EXISTS Abilita;
 CREATE TABLE Abilita (
     ID_Abilita INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL UNIQUE
 );
 
-DROP TABLE IF EXISTS Mezzo;
 CREATE TABLE Mezzo (
     ID_Mezzo INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
     Descrizione TEXT
 );
 
-DROP TABLE IF EXISTS Materiale;
 CREATE TABLE Materiale (
     ID_Materiale INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
     Descrizione TEXT
 );
 
-DROP TABLE IF EXISTS Segnalatore;
 CREATE TABLE Segnalatore (
     ID_Segnalatore INT PRIMARY KEY AUTO_INCREMENT,
     Nome VARCHAR(50) NOT NULL,
@@ -64,12 +55,11 @@ CREATE TABLE Segnalatore (
     Email VARCHAR(100) NOT NULL UNIQUE
 );
 
-DROP TABLE IF EXISTS Richiesta;
 CREATE TABLE Richiesta (
     ID_Richiesta INT PRIMARY KEY AUTO_INCREMENT,
     Link VARCHAR(255) NOT NULL,
     IP VARCHAR(45) NOT NULL,
-    Stato ENUM('Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Attiva',
+    Stato ENUM('Inviata','Attiva','In Corso','Chiusa','Annullata') NOT NULL DEFAULT 'Inviata',
     Foto VARCHAR(255), 
     Coordinate VARCHAR(100) NOT NULL,
     Indirizzo VARCHAR(255) NOT NULL,
@@ -81,7 +71,6 @@ CREATE TABLE Richiesta (
     FOREIGN KEY (ID_Amministratore) REFERENCES Amministratore(ID_Amministratore)
 );
 
-DROP TABLE IF EXISTS Missione;
 CREATE TABLE Missione (
     ID_Missione INT PRIMARY KEY AUTO_INCREMENT,
     Obiettivo TEXT NOT NULL,
@@ -100,7 +89,6 @@ CREATE TABLE Missione (
 
 -- Relazioni
 
-DROP TABLE IF EXISTS Amministratore_Possiede_Patente;
 CREATE TABLE Amministratore_Possiede_Patente (
     ID_Amministratore INT NOT NULL,
     ID_Patente INT NOT NULL,
@@ -109,7 +97,6 @@ CREATE TABLE Amministratore_Possiede_Patente (
     FOREIGN KEY (ID_Patente) REFERENCES Patente(ID_Patente)
 );
 
-DROP TABLE IF EXISTS Amministratore_Possiede_Abilita;
 CREATE TABLE Amministratore_Possiede_Abilita (
     ID_Amministratore INT NOT NULL,
     ID_Abilita INT NOT NULL,
@@ -118,7 +105,6 @@ CREATE TABLE Amministratore_Possiede_Abilita (
     FOREIGN KEY (ID_Abilita) REFERENCES Abilita(ID_Abilita)
 );
 
-DROP TABLE IF EXISTS Operatore_Possiede_Patente;
 CREATE TABLE Operatore_Possiede_Patente (
     ID_Operatore INT NOT NULL,
     ID_Patente INT NOT NULL,
@@ -127,7 +113,6 @@ CREATE TABLE Operatore_Possiede_Patente (
     FOREIGN KEY (ID_Patente) REFERENCES Patente(ID_Patente)
 );
 
-DROP TABLE IF EXISTS Operatore_Possiede_Abilita;
 CREATE TABLE Operatore_Possiede_Abilita (
     ID_Operatore INT NOT NULL,
     ID_Abilita INT NOT NULL,
@@ -136,7 +121,6 @@ CREATE TABLE Operatore_Possiede_Abilita (
     FOREIGN KEY (ID_Abilita) REFERENCES Abilita(ID_Abilita)
 );
 
-DROP TABLE IF EXISTS Mezzi_Usati_Missione;
 CREATE TABLE Mezzi_Usati_Missione (
     ID_Missione INT NOT NULL,
     ID_Mezzo INT NOT NULL,
@@ -145,7 +129,6 @@ CREATE TABLE Mezzi_Usati_Missione (
     FOREIGN KEY (ID_Mezzo) REFERENCES Mezzo(ID_Mezzo) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 
-DROP TABLE IF EXISTS Materiali_Usati_Missione;
 CREATE TABLE Materiali_Usati_Missione (
     ID_Missione INT NOT NULL,
     ID_Materiale INT NOT NULL,
@@ -154,7 +137,6 @@ CREATE TABLE Materiali_Usati_Missione (
     FOREIGN KEY (ID_Materiale) REFERENCES Materiale(ID_Materiale) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 
-DROP TABLE IF EXISTS Composizione_Squadra;
 CREATE TABLE Composizione_Squadra (
     ID_Squadra INT NOT NULL,
     ID_Operatore INT NOT NULL,
@@ -164,7 +146,6 @@ CREATE TABLE Composizione_Squadra (
     FOREIGN KEY (ID_Operatore) REFERENCES Operatore(ID_Operatore)
 );
 
-DROP TABLE IF EXISTS Missioni_Aggiornate;
 CREATE TABLE Missioni_Aggiornate (
     ID_Missione INT NOT NULL,
     ID_Amministratore INT NOT NULL,
@@ -177,8 +158,21 @@ CREATE TABLE Missioni_Aggiornate (
 
 
 
+DELIMITER $$
+-- Alle Richieste devono essere associate delle stringhe lunghe e casuali, che saranno poi i Link
+CREATE TRIGGER trg_link_casuale
+BEFORE INSERT ON Richiesta
+FOR EACH ROW
+BEGIN
+   IF NEW.Link IS NULL OR NEW.Link = '' THEN
+		SET NEW.Link = CONCAT('https://', UUID());
+   END IF;
+END$$
+DELIMITER ;
+
+
+
 -- Ruolo con tutti i permessi da dare agli Amministratori
-DROP ROLE IF EXISTS amministratore; -- test
 CREATE ROLE amministratore;
 GRANT INSERT ON soccorso.Amministratore TO amministratore WITH GRANT OPTION; -- Creare account per Operatori e Amministratori
 GRANT INSERT ON soccorso.Operatore TO amministratore WITH GRANT OPTION;
@@ -199,7 +193,7 @@ GRANT INSERT ON soccorso.Squadra TO amministratore WITH GRANT OPTION; -- Creare 
 GRANT UPDATE ON soccorso.Richiesta TO amministratore WITH GRANT OPTION; -- Aggiornare le Richieste (per marcarle come Annullate)
 
 -- Creazione utente con tutti i privilegi per loggare sul codice java
-DROP USER IF EXISTS 'superuser'@'localhost'; -- test
+DROP USER IF EXISTS 'superuser'@'localhost';
 CREATE USER 'superuser'@'localhost' IDENTIFIED BY 'password123';
 GRANT SELECT ON soccorso.* TO 'superuser'@'localhost' WITH GRANT OPTION;
 GRANT CREATE USER, GRANT OPTION, ROLE_ADMIN ON *.* TO 'superuser'@'localhost';

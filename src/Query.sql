@@ -4,24 +4,46 @@
 
 
 -- 1. Inserimento di una richiesta di soccorso.
-INSERT INTO Richiesta (IP, Foto, Coordinate, Indirizzo, Descrizione, ID_Segnalatore, ID_Amministratore) VALUES
-('192.168.0.2', NULL, '41.9028,12.4964',  'Via del Corso, Roma', 'Caduta di un albero', 2,  1);
+DELIMITER $$
+CREATE PROCEDURE query1 (IN ip VARCHAR(45), IN foto VARCHAR(255), iN coord VARCHAR(100), IN indirizzo VARCHAR(255), IN descrizione TEXT, IN tsr DATETIME, IN id_s INT, IN id_a INT)
+BEGIN
+	INSERT INTO Richiesta (IP, Foto, Coordinate, Indirizzo, Descrizione, TimestampRichiesta, ID_Segnalatore, ID_Amministratore) VALUES
+	(ip, foto, coord, indirizzo, descrizione, tsr, id_s, id_a);
+END$$
+DELIMITER ;
+
+CALL query1('192.168.0.2', NULL, '41.9028,12.4964',  'Via del Corso, Roma', 'Caduta di un albero', NOW(), 2,  1);
 
 
 -- 2. Creazione di una missione connessa a una richiesta di soccorso attiva. 
-INSERT INTO Missione (Obiettivo, TimeStampInizio, ID_Richiesta, ID_Squadra) VALUES
-('Rimuovere un albero', NOW(), 5, 1);
-  
+DELIMITER $$
+CREATE PROCEDURE query2 (IN obiettivo TEXT, IN tsi DATETIME, IN id_r INT, IN id_s INT)
+BEGIN
+	INSERT INTO Missione (Obiettivo, TimeStampInizio, ID_Richiesta, ID_Squadra) VALUES
+	(obiettivo, tsi, id_r, id_s);
+END$$
+DELIMITER ;
+
+CALL query2('Soccorso in montagna', NOW(), 5, 1);
+
 
 -- 3. Chiusura di una missione.
-UPDATE Missione
-SET TimestampFine = '2025-04-05 16:00:00',
-	Commenti = 'Dispersi ritrovati indenni',
-    Successo = 5
-WHERE ID_Missione = 3; -- Chiude la Missione 3
+DELIMITER $$
+CREATE PROCEDURE query3 (IN missione INT, IN tsf DATETIME, IN commenti TEXT, IN successo TINYINT UNSIGNED)
+BEGIN
+	UPDATE Missione
+	SET TimestampFine = tsf,
+		Commenti = commenti,
+		Successo = successo
+	WHERE ID_Missione = missione;
+END$$
+DELIMITER ;
+
+CALL query3(3, '2025-04-05 16:00:00', 'Dispersi ritrovati indenni', 5); -- Chiude la Missione 3 (Richiesta 4)
 
 
 -- 4. Estrazione della lista degli operatori non coinvolti in missioni in corso.
+CREATE VIEW query4 AS
 SELECT o.ID_Operatore, o.Nome, o.Cognome
 FROM Operatore o
 WHERE o.ID_Operatore NOT IN (
@@ -31,6 +53,8 @@ WHERE o.ID_Operatore NOT IN (
     JOIN Richiesta r ON m.ID_Richiesta = r.ID_Richiesta
     WHERE r.Stato = 'In Corso'
 );
+
+SELECT * FROM query4;
 
 
 -- 5. Calcolo del numero di missioni svolte da un operatore.
@@ -55,13 +79,13 @@ BEGIN
 		-- in un anno specifico
 		SELECT SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, m.TimestampFine))) AS TempoMedio
 		FROM Missione m
-		WHERE YEAR(m.TimestampInizio) = anno;
+		WHERE YEAR(m.TimestampInizio) = anno AND m.TimestampFine IS NOT NULL;
     ELSE
 		-- per ciascun caposquadra
-		SELECT cs.ID_Operatore, SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, m.TimestampFine))) AS TempoMedio
+		SELECT cs.ID_Operatore as ID_Caposquadra, SEC_TO_TIME(AVG(TIMESTAMPDIFF(SECOND, m.TimestampInizio, m.TimestampFine))) AS TempoMedio
 		FROM Missione m
 		JOIN Composizione_Squadra cs ON m.ID_Squadra = cs.ID_Squadra
-		WHERE cs.Ruolo = 'Caposquadra'
+		WHERE cs.Ruolo = 'Caposquadra' AND m.TimestampFine IS NOT NULL
 		GROUP BY cs.ID_Operatore;
     END IF;
 END$$
@@ -69,6 +93,7 @@ DELIMITER ;
 
 CALL query6(2025);
 CALL query6(NULL);
+
 
 -- 7. Calcolo del numero di richieste provenienti da un certo soggetto segnalante (identificato dall'indirizzo email) 
 -- o da un certo indirizzo IP nelle ultime 36 ore.
@@ -92,7 +117,7 @@ CALL query7(NULL, '192.168.0.5');
 
 -- 8. Calcolo del tempo totale di impiego in missione di un certo operatore (cioè somma delle durata delle missioni in cui è stato coinvolto)
 DELIMITER $$
-CREATE PROCEDURE query8(IN operatore INT)
+CREATE PROCEDURE query8 (IN operatore INT)
 BEGIN
     SELECT O.ID_Operatore,
            O.Nome,
@@ -112,7 +137,7 @@ CALL query8(3); -- Calcola il tempo per l'Operatore 3
 -- 9. Estrazione delle missioni svoltesi negli ultimi tre anni nello stesso luogo di una missione data.
 -- (Qui noi supponiamo che i dati siano consistenti tra di loro, così da evitare indirzzi uguali e coordinate diverse o viceversa)
 DELIMITER $$
-CREATE PROCEDURE query9(IN missione INT)
+CREATE PROCEDURE query9 (IN missione INT)
 BEGIN
     SELECT M2.ID_Missione, 
            M2.Obiettivo, 
@@ -132,7 +157,7 @@ CALL query9(5); -- Calcola per la Missione 5
 
 
 -- 10. Estrazione della lista delle richieste di soccorso chiuse con risultato non totalmente positivo (livello di successo minore di 5).
-CREATE OR REPLACE VIEW RichiesteNonPositive AS
+CREATE VIEW query10 AS
 SELECT R.ID_Richiesta,
        R.Descrizione,
        R.Indirizzo,
@@ -144,11 +169,12 @@ FROM Richiesta R
 JOIN Missione M ON R.ID_Richiesta = M.ID_Richiesta
 WHERE M.Successo IS NOT NULL AND M.Successo < 5;
 
-SELECT * FROM RichiesteNonPositive;
+SELECT * FROM query10;
 
 
 -- 11. Estrazione degli operatori maggiormente coinvolti nelle richieste di soccorso chiuse con risultato non totalmente positivo
 -- (calcolate come alla query precedente).
+CREATE VIEW query11 AS
 SELECT O.ID_Operatore,
 	   O.Nome,
 	   O.Cognome,
@@ -156,9 +182,11 @@ SELECT O.ID_Operatore,
 FROM Operatore O
 JOIN Composizione_Squadra CS ON O.ID_Operatore = CS.ID_Operatore
 JOIN Missione M ON CS.ID_Squadra = M.ID_Squadra
-JOIN RichiesteNonPositive V ON V.ID_Richiesta = M.ID_Richiesta
+JOIN query10 V ON V.ID_Richiesta = M.ID_Richiesta
 GROUP BY O.ID_Operatore, O.Nome, O.Cognome
 ORDER BY NumeroMissioniNonPositive DESC;
+
+SELECT * FROM query11;
 
 
 -- 12. Estrazione dello storico delle missioni in cui è stato coinvolto un certo mezzo.
@@ -194,7 +222,7 @@ BEGIN
     FROM Materiale Mat
     JOIN Materiali_Usati_Missione MU ON Mat.ID_Materiale = MU.ID_Materiale
     JOIN Missione M ON MU.ID_Missione = M.ID_Missione
-    WHERE Mat.ID_Materiale = materiale
+    WHERE Mat.ID_Materiale = materiale AND M.TimestampFine IS NOT NULL
     GROUP BY Mat.ID_Materiale, Mat.Nome;
 END$$
 DELIMITER ;

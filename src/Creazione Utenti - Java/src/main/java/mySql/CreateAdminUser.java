@@ -49,7 +49,7 @@ public class CreateAdminUser {
     }
 
     private static void createUserIfNotExists(Connection conn, String username, String password) throws SQLException {
-        String sql = "CREATE USER IF NOT EXISTS '" + username + "'@'%' IDENTIFIED BY '" + password + "'";
+        String sql = "CREATE USER IF NOT EXISTS '" + username + "'@'localhost' IDENTIFIED BY '" + password + "'";
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
             System.out.println("Utente " + username + " verificato/creato.");
