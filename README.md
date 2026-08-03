@@ -38,3 +38,7 @@ Di seguito sono illustrate schematicamente le operazioni previste sulla base di 
 13. Calcolo delle ore d'uso di un certo materiale (supponiamo che il tempo d'uso uso corrisponda alla durata totale della missione in cui è stato assegnato).
     
 È possibile inserire procedure di gestione addizionali che si ritengano utili.
+
+## Team
+- Spinelli Danilo: https://github.com/danilospinelli
+- Lancia Andrea: https://github.com/alancia04
